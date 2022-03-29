@@ -168,9 +168,12 @@ def prepare_bert_input(tokeniser, tokenised_sentence, complex_word_idx, num_mask
     bert_input = {'unused_id':0, 'tokens':tokens, 'input_ids':input_ids, 'input_mask':input_mask, 'input_type_ids': input_type_ids, 'complex_word_position':complex_word_position, 'num_masks': num_masks}
     return bert_input
 
-def generate_substitutions_candidates(bert_model, bert_input, tokeniser):
+def generate_substitutions_candidates(bert_model, bert_input, tokeniser, topk=80):
     '''
     Given bert_input dictionary (see preprare_bert_input function), generates candidate substitutions using BERT
+    returns a list of len(num_masks) of substitution candidates in the position:
+        [mask_1_candidates, mask_2_candidates, ...]
+        where mask_i_candidates = [bert_output_values (in cpu), bert_output_tokens]
     '''
     # from bert_input
     complex_word_position = bert_input['complex_word_position']
@@ -183,17 +186,16 @@ def generate_substitutions_candidates(bert_model, bert_input, tokeniser):
     with torch.no_grad():
         pred = bert_model(ids_tensor, type_id_tensor, attention_mask_tensor)
 
-    if num_masks > 1:
-        substitute_positions = np.arange(complex_word_position[0], complex_word_position[0] + num_masks, 1)
-        candidate_values, candidate_ids = pred[0, substitute_positions].topk(80)
-        candidate_ids = candidate_ids.cpu().numpy()
-        tokeniser.convert_ids_to_tokens(candidate_ids[0])
-    else:
-        candidate_values, candidate_ids = pred[0, complex_word_position[0]].topk(80)
-        candidate_values = candidate_values.cpu().numpy()
-        candidate_tokens = tokeniser.convert_ids_to_tokens(candidate_ids.cpu().numpy())
+    substitution_candidates = []
+
+    substitute_positions = np.arange(complex_word_position[0], complex_word_position[0] + num_masks, 1)
+    candidate_values, candidate_ids = pred[0, substitute_positions].topk(topk)
     
-    return candidate_values, candidate_tokens
+    for i in range(num_masks):
+        tokens = tokeniser.convert_ids_to_tokens(candidate_ids[i].cpu().numpy())
+        substitution_candidates.append([candidate_values[i].cpu().numpy(), tokens])
+    assert False  
+    return substitution_candidates
 
 
 if __name__ == '__main__':
@@ -215,5 +217,5 @@ if __name__ == '__main__':
     s = ComplexSentence(input_sentence, label_model=Complexity_labeller_model, tokeniser=tokeniser)
     complex_word_idx = s.find_MWEs_w_most_complex_word(n_gram=2, filepath=two_gram_mwes_list)
     
-    bert_input = prepare_bert_input(tokeniser, s.tokenised_sentence, complex_word_idx, num_masks=1, mask_prob=0.5)
-    generate_substitutions_candidates(bert_model, bert_input, tokeniser)
+    bert_input = prepare_bert_input(tokeniser, s.tokenised_sentence, complex_word_idx, num_masks=2, mask_prob=0.5)
+    substitutions = generate_substitutions_candidates(bert_model, bert_input, tokeniser)
