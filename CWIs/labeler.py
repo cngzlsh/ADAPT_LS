@@ -1,13 +1,11 @@
 import collections
 import tensorflow.compat.v1 as tf
+tf.autograph.set_verbosity(1)
 import re
 import numpy
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import math_ops
 
-import warnings
-warnings.filterwarnings('ignore', category=DeprecationWarning)
-warnings.filterwarnings('ignore', category=FutureWarning)
 
 tf.disable_v2_behavior()
 tf.disable_eager_execution()

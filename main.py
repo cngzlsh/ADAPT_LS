@@ -1,18 +1,11 @@
-# TODI
-
-
 import numpy as np
-from CWIs.complex_labeller import Complexity_labeller
-# from utils import ComplexSentence
-
 import torch
-from pytorch_pretrained_bert.tokenization import BertTokenizer
-from pytorch_pretrained_bert.modeling import BertModel, BertForMaskedLM
+from transformers import BertTokenizer, BertForMaskedLM
+from tqdm import tqdm
+import copy
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-seed = 1234
-np.random.seed(seed)
-torch.manual_seed(seed)
+from CWIs.complex_labeller import Complexity_labeller
+from plainifier.plainify import *
 
 class ComplexSentence:
     # Sentence class
@@ -84,7 +77,7 @@ class ComplexSentence:
         if has_mwe:
             return valid_mwes_idx
         else:
-            return complex_word_pos
+            return [complex_word_pos]
 
 
 def prepare_bert_input(tokeniser, tokenised_sentence, complex_word_idx, num_masks, max_seq_len=128, mask_prob=0.5):
@@ -194,28 +187,69 @@ def generate_substitutions_candidates(bert_model, bert_input, tokeniser, topk=80
     for i in range(num_masks):
         tokens = tokeniser.convert_ids_to_tokens(candidate_ids[i].cpu().numpy())
         substitution_candidates.append([candidate_values[i].cpu().numpy(), tokens])
-    assert False  
+
     return substitution_candidates
+
+
 
 
 if __name__ == '__main__':
 
-    input_sentence = 'You ought to have offered to help'
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    seed = 1234
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+
     two_gram_mwes_list = './CWIs/2_gram_mwe_50.txt'
     three_gram_mwes_list = './CWIs/3_gram_mwe_25.txt'
     four_gram_mwes_list = './CWIs/4_gram_mwe_8.txt'
-
     pretrained_model_path = './CWIs/cwi_seq.model'
     temp_path = './CWIs/temp_file.txt'
-    
+
+    path = './plainifier/'
+    premodel = 'bert-large-uncased-whole-word-masking'
+    bert_dict = 'tersebert_pytorch_1_0.bin'
+    embedding = 'crawl-300d-2M-subword.vec'
+    unigram = 'unigrams-df.tsv'
+    tokenizer = BertTokenizer.from_pretrained(premodel)
     Complexity_labeller_model = Complexity_labeller(pretrained_model_path, temp_path)
+
+    model, similm, tokenfreq, embeddings, vocabulary2 = load_all(path, premodel, bert_dict, embedding, unigram, tokenizer)
     
-    tokeniser = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True)
-    bert_model = BertForMaskedLM.from_pretrained('bert-base-uncased')
-    bert_model.to(device)
-    
-    s = ComplexSentence(input_sentence, label_model=Complexity_labeller_model, tokeniser=tokeniser)
+ 
+    input_sentence = 'You ought to have offered to help'
+    s = ComplexSentence(input_sentence, label_model=Complexity_labeller_model, tokeniser=tokenizer)
     complex_word_idx = s.find_MWEs_w_most_complex_word(n_gram=2, filepath=two_gram_mwes_list)
-    
-    bert_input = prepare_bert_input(tokeniser, s.tokenised_sentence, complex_word_idx, num_masks=2, mask_prob=0.5)
-    substitutions = generate_substitutions_candidates(bert_model, bert_input, tokeniser)
+
+    processed_sentence = tokeniseUntokenise(input_sentence, tokenizer)
+    result1 = getTokenReplacement(processed_sentence, 
+                                complex_word_idx[0], 
+                                len(complex_word_idx), 
+                                tokenizer,
+                                model, 
+                                similm, 
+                                tokenfreq, 
+                                embeddings, 
+                                vocabulary2, 
+                                verbose=True, 
+                                backwards=False, 
+                                maxDepth=3, 
+                                maxBreadth=16, 
+                                alpha=(1/9,6/9,2/9))
+
+    result2 = getTokenReplacement(processed_sentence,
+                                complex_word_idx[0],
+                                len(complex_word_idx),
+                                tokenizer,
+                                model, 
+                                similm, 
+                                tokenfreq, 
+                                embeddings, 
+                                vocabulary2,
+                                verbose=True,
+                                backwards=True,
+                                maxDepth=3,
+                                maxBreadth=16,
+                                alpha=(1/9,6/9,2/9))
+
+    words, scores = aggregateResults((result1,result2))
