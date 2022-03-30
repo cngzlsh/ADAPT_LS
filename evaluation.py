@@ -16,10 +16,17 @@ import os
 # standard
 eval_data1 = os.path.join('evaluation', 'BenchLS', 'BenchLS.txt')
 eval_data2 = os.path.join('evaluation', 'NNSeval', 'NNSeval.txt')
+eval_data3 = os.path.join('evaluation', 'lexmturk', 'lexmturk.txt')
 
 with open(eval_data1) as file:
     sentences = file.readlines()
 print(sentences)
+
+def FRES(sentence):
+    word_list = sentence.split(' ')
+    words = len(word_list)
+    syllables = 0
+    score = 206.835-1.015 * (words) - 84.6*(syllables/words)
 
 
 

@@ -194,7 +194,7 @@ def generate_substitutions_candidates(bert_model, bert_input, tokeniser, topk=80
     for i in range(num_masks):
         tokens = tokeniser.convert_ids_to_tokens(candidate_ids[i].cpu().numpy())
         substitution_candidates.append([candidate_values[i].cpu().numpy(), tokens])
-    assert False  
+    #assert False
     return substitution_candidates
 
 

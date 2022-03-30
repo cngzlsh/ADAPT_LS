@@ -27,9 +27,9 @@ class Complexity_labeller:
 
 
 	def convert_format_string(self, string):
-	    
+
 	    split_list = word_tokenize(string)
-	    
+
 	    dataframe = pd.DataFrame()
 	    dataframe['word'] = split_list
 	    dataframe['binary'] = 'N'
