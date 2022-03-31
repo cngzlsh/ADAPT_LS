@@ -1,7 +1,11 @@
-Katie	N
-takes	N
+I	N
+took	N
 a	N
 sip	N
 of	N
-her	N
-cappuccino	N
+my	N
+coffee	N
+and	N
+kept	N
+working	N
+.	N

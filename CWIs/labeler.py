@@ -1,6 +1,5 @@
 import collections
 import tensorflow.compat.v1 as tf
-tf.autograph.set_verbosity(1)
 import re
 import numpy
 from tensorflow.python.framework import ops
