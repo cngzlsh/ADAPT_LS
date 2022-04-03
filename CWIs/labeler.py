@@ -1,11 +1,13 @@
 import collections
+
+import tensorflow
 import tensorflow.compat.v1 as tf
 import re
 import numpy
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import math_ops
 
-
+tf.logging.set_verbosity(tf.logging.ERROR)
 tf.disable_v2_behavior()
 tf.disable_eager_execution()
 
