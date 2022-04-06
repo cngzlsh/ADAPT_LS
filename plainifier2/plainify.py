@@ -3,7 +3,7 @@ import numpy as np
 from transformers import BertTokenizer, BertModel, BertForMaskedLM
 import copy
 
-from plainifier.planify_utils import *
+from plainifier2.planify_utils import *
 
 # Should GPU be used
 usingGPU=torch.cuda.is_available()
